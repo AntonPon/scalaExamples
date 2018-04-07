@@ -3,7 +3,7 @@
 // and when call it, we call with all environment
 // it gives us a more abstraction during implementation
 
-
+// sum function with closure
 def sum(f: Int =>  Int): (Int, Int)=> Int   = {
   def sumF(a: Int, b:Int): Int = {
     if (a > b) 0 else f(a) + sumF(a+1, b)
@@ -79,4 +79,18 @@ def f = (a: Int, b: Int, c:Int) => a + b +c
 val curry = f.curried
 
 val curry1 = curry(1)
-curry1(2)(3)
+curry1  (2)(3)
+
+
+def fibNumber = (n: Int)=>{
+  def f(a: Int, b: Int, k: Int): Int = {
+    if (k == 0) b + a
+    else f(b, b+a, k-1)
+  }
+  f(1, 1, n)
+}
+
+def factorial = (n: Int) =>{
+
+}
+
