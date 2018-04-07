@@ -20,19 +20,19 @@
 
 
     def show(e: Expr): String ={
-      def sumMatcher(e: Expr) = {
+      def matcher(e: Expr) = {
         e match {
-          case Number(_) => show(e)
+          case Number(n) => n + ""
           case Sum(_, _) => "(" + show(e) + ")"
           case Prod(_, _) => show(e)
-          case Var(_) => show(e)
+          case Var(n) => n
         }
       }
       e match {
-        case Number(n) => n + ""
-        case Var(name) => name
+        case Number(_) => matcher(e)
+        case Var(_) => matcher(e)
         case Sum(lOp, rOp) => show(lOp) + " + " + show(rOp)
-        case Prod(lOp, rOp) => sumMatcher(lOp) + " * " +sumMatcher(rOp)
+        case Prod(lOp, rOp) => matcher(lOp) + " * " +matcher(rOp)
       }
     }
 
