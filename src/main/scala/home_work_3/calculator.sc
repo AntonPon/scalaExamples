@@ -105,17 +105,31 @@
 
    sealed trait Stat{
 
+     def show(stat: Stat): String = {
+       stat match  {
+         case DoNothing() => "do nothing"
+         case Assign(name, expr) =>   name + " = "  + expr
+         case IfElse2(expr, trueCl, falseCl) =>  "if (" + expr + ") " + show(trueCl) + "\n" + "else " + show(falseCl)
+         case While(expr, seq) => "while( " + expr + ")\n" + show(seq)
+         case _ => " "
+       }
+     }
+     override def toString = show(this)
    }
 
    case class DoNothing() extends Stat
+
    case class Assign(name: String, expr: Expr) extends Stat
+
    case class IfElse2(expr: Expr, trueCl: Stat, falseCl: Stat) extends Stat
+
    case class Seq(stats: Stat*) extends Stat
-   case class While(expr: Expr, seq: Seq) extends Stat
+
+   case class While(expr: Expr, seq: Stat) extends Stat
 
   final class Machine{
     def run(stat: Stat, env: Map[String, Any]):Map[String, Any] = {
-      //println(expr)
+      println(stat)
       def runExpr(expr: Expr, env: Map[String, Any]):Expr = {
         println(expr)
         if (expr.isReduciable)
