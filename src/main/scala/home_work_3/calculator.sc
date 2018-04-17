@@ -1,5 +1,4 @@
-
-{
+ {
   sealed trait Expr {
 
     def isReduciable: Boolean = this match {
@@ -21,17 +20,7 @@
         }
       }
 
-      def getBooleans(e: Expr): Boolean = {
-        e match {
-          case Booleans(b) => b
-        }
-      }
-      def isNumber(e: Expr): Boolean = {
-        e match {
-        case Number(_) => true
-        case Booleans(_) => false
-        }
-      }
+
       this match{
         case Number(_) => this
         case Booleans(_) => this
@@ -86,6 +75,19 @@
 
   }
 
+   def getBooleans(e: Expr): Boolean = {
+     e match {
+       case Booleans(b) => b
+     }
+   }
+
+   def isNumber(e: Expr): Boolean = {
+     e match {
+       case Number(_) => true
+       case Booleans(_) => false
+     }
+   }
+
   case class Sum(lOp: Expr, rOp: Expr) extends Expr
 
   case class Number(n: Int) extends Expr
@@ -101,39 +103,79 @@
   case class IfElse(statement: Expr, trueCl: Expr, falseCl: Expr) extends Expr
 
 
+   sealed trait Stat{
 
+   }
 
+   case class DoNothing() extends Stat
+   case class Assign(name: String, expr: Expr) extends Stat
+   case class IfElse2(expr: Expr, trueCl: Stat, falseCl: Stat) extends Stat
+   case class Seq(stats: Stat*) extends Stat
 
   final class Machine{
-    def run(expr: Expr, env: Map[String, Int]):Expr = {
-      println(expr)
-      if (expr.isReduciable)
-        run(reductionStep(expr, env), env)
-      else expr
-    }
+    def run(stat: Stat, env: Map[String, Any]):Map[String, Any] = {
+      //println(expr)
+      def runExpr(expr: Expr, env: Map[String, Any]):Expr = {
+        println(expr)
+        if (expr.isReduciable)
+          runExpr(reduce(expr, env), env)
+        else expr
+      }
 
-    def reductionStep(expr: Expr, env: Map[String, Int]):Expr = {
+
+      stat match {
+        case DoNothing() => env
+        case Assign(name, expr) =>{
+          env ++ Map(name -> runExpr(expr, env))
+        }
+        case IfElse2(st, trueCl, falseCL) => {
+          val stat:Expr = runExpr(st, env)
+          require(!isNumber(stat), "the statement is not Booleans")
+          if (getBooleans(stat)){
+            run(trueCl, env)
+          }else{
+            run(falseCL, env)
+          }
+        }
+        case Seq(rest@_*) =>{
+          if(rest.length > 0 ){
+            run(Seq(rest.tail : _*), run(rest.head, env))
+          }
+          else {
+            env
+          }
+        }
+      }
+      }
+
+
+    def reduce(expr: Expr, env: Map[String, Any]):Expr = {
      expr match {
        case Number(_) => expr
-       case Var(name) => Number(env(name))
+       case Var(name) =>
+       { env(name) match {
+         case x:Int => Number(x)
+         case x:Boolean => Booleans(x)
+       }
+       }
        case Sum(lOp, rOp) => {
-         if (lOp.isReduciable) Sum(reductionStep(lOp, env), rOp)
-         else if (rOp.isReduciable) Sum(lOp, reductionStep(rOp, env))
+         if (lOp.isReduciable) Sum(reduce(lOp, env), rOp)
+         else if (rOp.isReduciable) Sum(lOp, reduce(rOp, env))
          else (expr.eval)
        }
        case Prod(lOp, rOp) => {
-         if (lOp.isReduciable) Prod(reductionStep(lOp, env), rOp)
-         else if (rOp.isReduciable) Prod(lOp, reductionStep(rOp, env))
+         if (lOp.isReduciable) Prod(reduce(lOp, env), rOp)
+         else if (rOp.isReduciable) Prod(lOp, reduce(rOp, env))
          else (expr.eval)
        }
        case Greater(lOp, rOp) => {
-         if (lOp.isReduciable) Greater(reductionStep(lOp, env), rOp)
-         else if (rOp.isReduciable) Greater(lOp, reductionStep(rOp, env))
+         if (lOp.isReduciable) Greater(reduce(lOp, env), rOp)
+         else if (rOp.isReduciable) Greater(lOp, reduce(rOp, env))
          else (expr.eval)
        }
        case IfElse(st, fsCl, scCl) => {
-         if (st.isReduciable) IfElse(reductionStep(st, env), fsCl, scCl)
-         else reductionStep(expr.eval, env)
+         if (st.isReduciable) IfElse(reduce(st, env), fsCl, scCl)
+         else reduce(expr.eval, env)
        }
      }
      }
@@ -144,5 +186,8 @@
   val b = new  Prod(a, Sum(Number(25), Number(16)))
   val c = new Greater(new  Prod(a, Sum(Number(25), Number(16))), new Number(40))
   val d = new IfElse(c, a,b)
- (new Machine).run(d, Map("x" -> 15))
+ //(new Machine).run(Assign("x1", d), Map("x" -> 15))
+   (new Machine).run(Seq(Assign("x", Number(23)), Assign("z", Number(45))), Map("x" -> 15))
 }
+
+
